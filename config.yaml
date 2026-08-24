@@ -1,0 +1,78 @@
+# =============================================================================
+# Chest X-Ray Multi-Label Diagnosis Pipeline — Configuration
+# =============================================================================
+# Every parameter the pipeline needs lives here. Nothing is hard-coded in the
+# source modules — copy this file, tweak values, and point --config at the copy
+# to run a different experiment.
+#
+# Paths below (data/, models/, outputs/) are runtime locations, not part of
+# the repo itself — they are created automatically or expected to be
+# populated by you (see README "Data & model weights"). They are not
+# committed to the repository.
+
+data:
+  train_csv: data/nih/train-small.csv
+  valid_csv: data/nih/valid-small.csv
+  test_csv: data/nih/test.csv
+  image_dir: data/nih/images-small/
+  image_col: Image            # column in the CSVs holding the image filename
+  patient_col: PatientId      # column used to check for patient-level leakage
+
+# The 14 pathologies the model predicts (order matters — it is the model's
+# output order and must match any pretrained weights you load).
+labels:
+  - Cardiomegaly
+  - Emphysema
+  - Effusion
+  - Hernia
+  - Infiltration
+  - Mass
+  - Nodule
+  - Atelectasis
+  - Pneumothorax
+  - Pleural_Thickening
+  - Pneumonia
+  - Fibrosis
+  - Edema
+  - Consolidation
+
+image:
+  target_w: 320
+  target_h: 320
+  batch_size: 8
+  seed: 1
+  sample_size: 100            # images sampled to fit train-set normalization stats
+
+model:
+  # Backbone weights for DenseNet121. Use "imagenet" for the standard Keras
+  # pretrained backbone, a path to a local .hdf5 file, or null for random init.
+  base_weights: imagenet
+  # Full model checkpoint (backbone + classification head) to load before
+  # prediction/evaluation/gradcam. Leave null to use the freshly-built model
+  # (e.g. right after training).
+  pretrained_weights: models/nih/pretrained_model.h5
+  optimizer: adam
+  loss_epsilon: 1.0e-7        # numerical stability constant inside the weighted loss
+
+training:
+  steps_per_epoch: 100
+  validation_steps: 25
+  epochs: 3
+  output_weights: models/nih/trained_model.h5
+  history_plot: outputs/training_loss.png
+
+evaluation:
+  output_dir: outputs/
+  roc_plot_filename: roc_curve.png
+  predictions_csv: predictions.csv
+  auc_csv: auc_scores.csv
+
+gradcam:
+  layer_name: bn              # final conv/BN layer name in DenseNet121 to use
+  num_top_labels: 4           # how many highest-AUC labels to visualize
+  images: []                  # explicit list of image filenames; empty = pick randomly from test_csv
+  num_random_images: 4        # used only when `images` is empty
+  output_dir: outputs/gradcam/
+
+logging:
+  level: INFO                 # DEBUG, INFO, WARNING, ERROR

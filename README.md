@@ -1,8 +1,5 @@
 # Chest X-Ray Multi-Label Diagnosis Pipeline
 
-The solution delivers multi-class prediction by using the public model that re-trained by using a transfer learning and a set of extra public data with human x-ray images.
-
-
 A configurable, command-line pipeline for multi-label chest X-ray classification
 with DenseNet121 transfer learning, class-imbalance-aware weighted loss,
 AUROC/ROC evaluation, and Grad-CAM visualization.
