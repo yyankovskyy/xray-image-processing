@@ -1,0 +1,79 @@
+# =============================================================================
+# Chest X-Ray Pipeline — SMALL / SMOKE-TEST Configuration
+# =============================================================================
+# Purpose: exercise every stage of the pipeline (leakage check, generators,
+# training, prediction, evaluation, Grad-CAM) in well under a minute, on a
+# laptop CPU, with no GPU and no network access.
+#
+# Paired with the `make-dummy-data` command, which fills the paths below with
+# tiny random-noise images and schema-valid CSVs:
+#
+#   python main.py make-dummy-data --config config.small.yaml
+#   python main.py run-all         --config config.small.yaml
+#
+# The metrics this produces are meaningless (the "images" are random noise) —
+# this config only proves the wiring works. For real results, use config.yaml
+# against the real ChestX-ray8 data. Paths here are kept separate from
+# config.yaml's (data/nih_small/, models/nih_small/, outputs_small/) so
+# running the smoke test never touches real data/outputs.
+
+data:
+  train_csv: data/nih_small/train-small.csv
+  valid_csv: data/nih_small/valid-small.csv
+  test_csv: data/nih_small/test.csv
+  image_dir: data/nih_small/images-small/
+  image_col: Image
+  patient_col: PatientId
+
+labels:
+  - Cardiomegaly
+  - Emphysema
+  - Effusion
+  - Hernia
+  - Infiltration
+  - Mass
+  - Nodule
+  - Atelectasis
+  - Pneumothorax
+  - Pleural_Thickening
+  - Pneumonia
+  - Fibrosis
+  - Edema
+  - Consolidation
+
+image:
+  target_w: 96                # small enough to be fast; large enough for DenseNet121's 32x downsampling
+  target_h: 96
+  batch_size: 2
+  seed: 1
+  sample_size: 4               # <= total train images (6 patients x 2 images = 12)
+
+model:
+  base_weights: null            # random init — skips the ImageNet weights download entirely
+  pretrained_weights: null       # no checkpoint to load; train/predict build fresh each time
+  optimizer: adam
+  loss_epsilon: 1.0e-7
+
+training:
+  enabled: true                 # so `run-all` actually trains in this smoke-test config
+  steps_per_epoch: 2
+  validation_steps: 1
+  epochs: 1
+  output_weights: models/nih_small/trained_model_small.h5
+  history_plot: outputs_small/training_loss.png
+
+evaluation:
+  output_dir: outputs_small/
+  roc_plot_filename: roc_curve.png
+  predictions_csv: predictions.csv
+  auc_csv: auc_scores.csv
+
+gradcam:
+  layer_name: bn
+  num_top_labels: 2
+  images: []
+  num_random_images: 1
+  output_dir: outputs_small/gradcam/
+
+logging:
+  level: DEBUG

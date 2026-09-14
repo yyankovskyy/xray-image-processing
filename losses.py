@@ -2,6 +2,10 @@
 
 Ports the assignment's Exercise 2 (`compute_class_freqs`) and Exercise 3
 (`get_weighted_loss`).
+
+Uses plain `tensorflow` ops (`tf.reduce_mean`, `tf.math.log`) rather than
+`keras.backend`, so the loss works unchanged under both Keras 2 (TF <2.16)
+and Keras 3 (TF >=2.16) — `keras.backend.K.mean`/`K.log` are Keras-2-only.
 """
 from __future__ import annotations
 
@@ -9,7 +13,7 @@ import logging
 from typing import Callable, Tuple
 
 import numpy as np
-from keras import backend as K
+import tensorflow as tf
 
 logger = logging.getLogger(__name__)
 
@@ -45,14 +49,19 @@ def get_weighted_loss(pos_weights: np.ndarray, neg_weights: np.ndarray,
     """
 
     def weighted_loss(y_true, y_pred):
+        # Labels frequently arrive as int64 (straight from a CSV/dataframe)
+        # while predictions are float32 — cast explicitly rather than relying
+        # on an implicit cast, which differs across Keras 2/3 loss wrappers.
+        y_true = tf.cast(y_true, y_pred.dtype)
         loss = 0.0
         for i in range(len(pos_weights)):
-            loss += K.mean(
+            loss += tf.reduce_mean(
                 -(
-                    pos_weights[i] * y_true[:, i] * K.log(y_pred[:, i] + epsilon)
-                    + neg_weights[i] * (1.0 - y_true[:, i]) * K.log(1.0 - y_pred[:, i] + epsilon)
+                    pos_weights[i] * y_true[:, i] * tf.math.log(y_pred[:, i] + epsilon)
+                    + neg_weights[i] * (1.0 - y_true[:, i]) * tf.math.log(1.0 - y_pred[:, i] + epsilon)
                 )
             )
         return loss
 
     return weighted_loss
+

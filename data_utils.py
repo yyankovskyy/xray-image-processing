@@ -10,7 +10,7 @@ import logging
 from typing import Any, Dict, List, Tuple
 
 import pandas as pd
-from keras.preprocessing.image import ImageDataGenerator
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
 
 logger = logging.getLogger(__name__)
 

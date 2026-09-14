@@ -1,14 +1,24 @@
-# Pinned to match the original assignment's API surface (standalone `keras`
-# package + `keras.backend.get_session`, `tf.compat.v1.logging`, etc).
-# See the "Compatibility note" section of README.md before using a newer
-# TensorFlow/Keras — several calls here (K.get_session, model.fit_generator-
-# style generators) are from the TF1/standalone-Keras era.
-numpy>=1.19,<2.0
-pandas>=1.1,<2.0
+# Works with Python 3.9-3.12 across Intel and Apple Silicon Macs, and any
+# currently-installable TensorFlow. No standalone `keras` package (it no
+# longer tracks a matching version once TF bundles Keras internally).
+#
+# `tensorflow` has no upper bound — whatever your platform resolves (2.12
+# through the latest 2.x) is fine. `tf-keras` is installed alongside it
+# unconditionally: from TF 2.16 on, the default `keras` is Keras 3, which
+# dropped `ImageDataGenerator` (used in data_utils.py); `tf-keras` is
+# Google's official Keras-2 compatibility package. You MUST also set
+# TF_USE_LEGACY_KERAS=1 in your shell before running anything — see
+# README.md's Installation section. On TF<2.16 this env var is simply
+# ignored (Keras 3 doesn't exist yet there), so it's always safe to set.
+numpy>=1.23,<2.0
+pandas>=1.5,<2.3
 seaborn>=0.11
-matplotlib>=3.3
-opencv-python>=4.5
-scikit-learn>=0.24
+matplotlib>=3.5
+opencv-python>=4.5,<4.10   # 4.10+ builds started requiring numpy>=2; TF here pins numpy<2.0, and
+                           # installing opencv+numpy2 then tensorflow (which downgrades numpy to
+                           # 1.x) leaves a stale numpy2-ABI opencv binary — can crash native code
+                           # with "illegal hardware instruction" rather than a clean ImportError.
+scikit-learn>=1.0
 pyyaml>=5.4
-tensorflow>=2.3,<2.11
-keras>=2.4,<2.11
+tensorflow>=2.12
+tf-keras

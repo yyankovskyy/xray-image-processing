@@ -17,8 +17,8 @@ matplotlib.use("Agg")  # headless-safe backend for CLI runs
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from keras import backend as K
-from keras.preprocessing import image
+import tensorflow as tf
+from tensorflow.keras.preprocessing import image
 from tensorflow.compat.v1.logging import INFO, set_verbosity
 
 random.seed(a=None, version=2)
@@ -56,15 +56,27 @@ def load_image(img: str, image_dir: str, df: pd.DataFrame, image_col: str = "Ima
 
 
 def grad_cam(input_model, img_array, cls: int, layer_name: str, h: int = 320, w: int = 320):
-    """GradCAM method for visualizing input saliency for a given class index."""
-    y_c = input_model.output[0, cls]
-    conv_output = input_model.get_layer(layer_name).output
-    grads = K.gradients(y_c, conv_output)[0]
+    """GradCAM method for visualizing input saliency for a given class index.
 
-    gradient_function = K.function([input_model.input], [conv_output, grads])
+    Uses `tf.GradientTape` rather than the TF1-era `keras.backend.K.gradients`
+    / `K.function` — those relied on static-graph mode and no longer exist
+    under Keras 3 (TF>=2.16). GradientTape works identically under Keras 2
+    and Keras 3, so this is safe on any currently-installable TensorFlow.
+    """
+    grad_model = tf.keras.models.Model(
+        inputs=input_model.inputs,
+        outputs=[input_model.get_layer(layer_name).output, input_model.output],
+    )
 
-    output, grads_val = gradient_function([img_array])
-    output, grads_val = output[0, :], grads_val[0, :, :, :]
+    img_tensor = tf.convert_to_tensor(img_array, dtype=tf.float32)
+    with tf.GradientTape() as tape:
+        conv_output, predictions = grad_model(img_tensor)
+        y_c = predictions[:, cls]
+
+    grads_val = tape.gradient(y_c, conv_output)
+
+    output = conv_output[0].numpy()
+    grads_val = grads_val[0].numpy()
 
     weights = np.mean(grads_val, axis=(0, 1))
     cam = np.dot(output, weights)

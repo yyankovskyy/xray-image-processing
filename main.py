@@ -4,16 +4,24 @@ Chest X-Ray Multi-Label Diagnosis — CLI pipeline entrypoint.
 
 Usage examples
 --------------
-  python main.py check-leakage --config config.yaml
-  python main.py train          --config config.yaml
-  python main.py predict        --config config.yaml
-  python main.py evaluate       --config config.yaml
-  python main.py gradcam        --config config.yaml
-  python main.py run-all        --config config.yaml
+  python main.py check-leakage   --config config.yaml
+  python main.py train           --config config.yaml
+  python main.py predict         --config config.yaml
+  python main.py evaluate        --config config.yaml
+  python main.py gradcam         --config config.yaml
+  python main.py run-all         --config config.yaml
+  python main.py make-dummy-data --config config.small.yaml
 
 Every parameter (paths, image size, batch size, training schedule, labels,
 Grad-CAM settings, ...) is read from the YAML file passed via --config —
-see config.yaml at the repo root for the full set of options.
+see config.yaml (full-scale) and config.small.yaml (lightweight smoke test)
+at the repo root for the full set of options.
+
+`make-dummy-data` generates a tiny synthetic dataset (random-noise images +
+schema-valid CSVs) matching whatever --config you pass — normally
+config.small.yaml — so the rest of the pipeline can be smoke-tested without
+the real ChestX-ray8 data or a GPU. See README.md's "Full run vs. small
+smoke test" section.
 """
 from __future__ import annotations
 
@@ -29,12 +37,20 @@ import numpy as np
 
 from pipeline_config import ensure_dir, load_config, setup_logging
 from data_utils import build_all_generators, load_dataframes, run_leakage_checks
+from dummy_data import generate_dummy_dataset
 from evaluate import get_roc_curve, predict, save_auc_scores, save_predictions
 from gradcam import compute_gradcam
 from losses import compute_class_freqs
 from model_build import build_model, load_pretrained_weights
 
 logger = logging.getLogger(__name__)
+
+
+def cmd_make_dummy_data(cfg):
+    """Generate a tiny synthetic dataset matching this config's schema."""
+    counts = generate_dummy_dataset(cfg)
+    logger.info("Dummy data ready — row counts: %s", counts)
+    return counts
 
 
 def cmd_check_leakage(cfg):
@@ -186,6 +202,7 @@ def cmd_run_all(cfg):
 
 
 COMMANDS = {
+    "make-dummy-data": cmd_make_dummy_data,
     "check-leakage": cmd_check_leakage,
     "train": cmd_train,
     "predict": cmd_predict,

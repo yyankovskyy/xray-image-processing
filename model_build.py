@@ -6,9 +6,9 @@ import os
 from typing import Any, Dict, List
 
 import numpy as np
-from keras.applications.densenet import DenseNet121
-from keras.layers import Dense, GlobalAveragePooling2D
-from keras.models import Model
+from tensorflow.keras.applications.densenet import DenseNet121
+from tensorflow.keras.layers import Dense, GlobalAveragePooling2D
+from tensorflow.keras.models import Model
 
 from losses import get_weighted_loss
 
